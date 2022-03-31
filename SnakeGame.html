@@ -1,0 +1,414 @@
+<html>
+    <canvas id="canv" width="800" height="600"></canvas>
+    
+    <script>
+        
+        var g_canvas = document.getElementById("canv");
+        var g_ctx = g_canvas.getContext("2d");
+        
+        var activeScreen = 1;
+        var sound = true;
+        
+        var g_mousePosX = 0;
+        var g_mousePosY = 0;
+        
+        var g_FrameRate = 30;
+        var g_TimeInterval = 1000/g_FrameRate;
+        
+        class c_button
+            {
+                constructor(l_text,l_xPos,l_yPos,l_w,l_h)
+                {
+                    this.text = l_text;
+                    this.xPos = l_xPos;
+                    this.yPos = l_yPos;
+                    this.width = l_w;
+                    this.height = l_h;
+                }
+
+                m_buttonDetails(l_ctx)
+                {
+                    l_ctx.fillStyle = "black";
+                    l_ctx.textAlign = "center";
+                    l_ctx.font = "25px Arial";
+                    l_ctx.fillText(this.text,this.xPos+(this.width/2),this.yPos+((this.height/2) + 6));
+                    l_ctx.strokeStyle = "black";
+                    l_ctx.strokeRect(this.xPos,this.yPos,this.width,this.height);
+
+                }
+
+            }
+        
+        class c_squareBody
+            {
+                constructor(l_xPosSquare,l_yPosSquare,l_sizeSquare)
+                {
+                    this.xPosSquare = l_xPosSquare;
+                    this.yPosSquare = l_yPosSquare;
+                    this.sizeSquare = l_sizeSquare;
+                }
+
+                m_drawSquare(l_ctx)
+                {
+                    l_ctx.fillStyle = "red";
+                    l_ctx.fillRect(this.xPosSquare , this.yPosSquare , this.sizeSquare , this.sizeSquare);
+                }
+            }
+        
+        class c_snake
+            {
+                constructor(l_xPos,l_yPos,l_snakeSize)
+                {
+                    this.xPos = l_xPos;
+                    this.yPos = l_yPos;
+                    this.nodeSize = 10;
+                    
+                    this.maxSize = 50;
+                    this.snakeNodes = new Array(this.maxSize);
+                    this.currSize = l_snakeSize;
+                    this.movespeed = 5;
+                    
+                    this.gap = 1;
+                    this.moveUp = 0;
+                    this.moveDown = 0;
+                    this.moveRight = 0;
+                    this.moveLeft = 0;
+                    
+                    for(var i = 0 ; i < this.maxSize ; i++)
+                        {
+                            this.snakeNodes[i] = new c_squareBody(this.xPos, this.yPos, this.nodeSize);
+                            this.xPos = this.xPos + this.nodeSize; 
+                        }
+                    
+                    this.xPosArray = new Array((this.maxSize * this.nodeSize));
+                    this.yPosArray = new Array((this.maxSize * this.nodeSize));
+                    
+                    this.xPosArray[0] = this.snakeNodes[0].xPosSquare;
+                    this.yPosArray[0] = this.snakeNodes[0].yPosSquare;
+                    
+                    for(var i = 1 ; i < this.xPosArray.length ; i++)
+                    {
+                        this.xPosArray[i] = this.xPosArray[i-1] + 1;
+                        this.yPosArray[i] = this.yPosArray[i-1];
+
+                    }
+                    
+                    //console.log(this.xPosArray);
+                                       
+                    
+                }
+
+                m_drawSnake(l_ctx)
+                {
+                    for(var i = 0 ; i < this.currSize ; i++)
+                        {
+                            this.snakeNodes[i].m_drawSquare(l_ctx);
+                            //console.log(this.xPosArray.length + " " + this.yPosArray.length);
+                            
+                        }
+                }
+                
+                m_moveSnake(l_ctx)
+                {
+                    
+                    
+                    if(this.moveLeft == 1 || this.moveRight == 1 ||this.moveUp == 1||this.moveDown == 1)
+                                {
+                                    //shift by 1 
+                                    for(var a = 1 ; a <= this.movespeed ; a++)
+                                        {
+                                            for(var i = this.xPosArray.length-1  ; i > 0 ; i--)
+                                                {
+                                                    this.xPosArray[i] = this.xPosArray[i - 1];
+                                                    this.yPosArray[i] = this.yPosArray[i - 1];
+
+                                                }
+                                            if(this.moveLeft == 1)
+                                                {
+                                                    this.xPosArray[0]--;
+                                                }
+                                            if(this.moveUp == 1)
+                                                {
+                                                    this.yPosArray[0]--;
+
+                                                }
+                                            if(this.moveRight == 1)
+                                                {
+                                                    this.xPosArray[0]++;
+                                                }
+                                            if(this.moveDown == 1)
+                                                {
+                                                    this.yPosArray[0]++;
+                                                }
+                                        }
+                                    
+                                    
+                                    
+                                    
+                                    for(var i = 0 ; i < this.maxSize ; i++)
+                                        {
+                                            this.snakeNodes[i].xPosSquare = this.xPosArray[i * this.nodeSize];
+                                            this.snakeNodes[i].yPosSquare = this.yPosArray[i * this.nodeSize];
+                                        }
+                                    
+                                    // assign values back to node from posArray
+                                    //
+                                }
+                    
+                }
+            }
+        
+        class c_food
+            {
+                constructor(l_xPosFood,l_yPosFood,l_sizeFood)
+                {
+                    this.xPosFood = l_xPosFood;
+                    this.yPosFood = l_yPosFood;
+                    this.sizeFood = l_sizeFood;
+                    this.activeFood = 1;
+                }
+
+                m_drawFood(l_ctx)
+                {
+                    l_ctx.fillStyle = "yellow";
+                    l_ctx.fillRect(this.xPosFood , this.yPosFood , this.sizeFood , this.sizeFood);
+                }
+            }
+        
+        
+        var g_snake;
+        var g_food;
+        var g_StartButton;
+        var g_SettingsButton;
+        var g_SoundButton;
+        var g_BackButton;
+        var g_PauseButton;
+        var g_QuitGame;
+        var g_ContinueButton;
+        var g_FrameCounter = 0;
+        
+        function f_intMenu()
+        {
+            
+            g_StartButton = new c_button("Start Game" , 290 , 250 , 200 , 40);
+            g_SettingsButton = new c_button("Settings" , 290 , 350 , 200 , 40);
+            g_SoundButton = new c_button("Sound" , 320 , 250 , 100 , 40);
+            g_BackButton = new c_button("Back" , 50 , 50 , 100 , 40);
+            g_PauseButton = new c_button("Pause" , 50 , 50 , 100 , 40);
+            g_QuitGame = new c_button("Quit Game" , 270 , 270 , 200 , 40);
+            g_ContinueButton = new c_button("Continue" , 270 , 350 , 200 , 40);
+            
+        }
+        
+        function f_intGameplayObjects()
+        {
+           
+            g_snake = new c_snake(400,300,5);
+            g_food = new c_food(500,300,10);
+        }
+        
+        function f_drawGameplayObjects()
+        {
+            
+            if(activeScreen == 2)
+                {
+                    
+                    g_snake.m_drawSnake(g_ctx);
+                    g_food.m_drawFood(g_ctx);
+                }
+            
+        }
+        
+        
+        
+        function f_snakeFoodCollision()
+        {
+            //if snake head touches the food then food disappears
+            var differenceX = g_snake.snakeNodes[0].xPosSquare - g_food.xPosFood;
+            var differenceY = g_snake.snakeNodes[0].yPosSquare - g_food.yPosFood;
+            
+            //console.log(differenceX);
+            if(differenceX == 0 && differenceY == 0)
+                {
+                    
+                    g_snake.currSize += 5;
+                }
+        }
+        
+        
+        function f_drawMenu()
+        {
+            
+            
+            if(activeScreen == 1)
+                {
+                    
+                    g_ctx.fillStyle = "red";
+                    g_ctx.textAlign = "center";
+                    g_ctx.font = "50px Arial";
+                    g_ctx.fillText("Snake Game 2" , 400 , 150);
+                
+                    g_StartButton.m_buttonDetails(g_ctx);
+                    g_SettingsButton.m_buttonDetails(g_ctx);
+                }
+            
+            if(activeScreen == 2)
+                {
+                    
+                    g_PauseButton.m_buttonDetails(g_ctx);
+                    
+                }
+            
+            if(activeScreen == 3)
+                {
+                    
+                    g_BackButton.m_buttonDetails(g_ctx);
+                    g_SoundButton.m_buttonDetails(g_ctx);
+                    
+                }
+            
+            if(activeScreen == 4)
+                {
+                    
+                    g_QuitGame.m_buttonDetails(g_ctx);
+                    g_ContinueButton.m_buttonDetails(g_ctx);
+                    
+                }
+            
+            
+        }
+        
+        function f_KeyDownEventHandler(l_eventData)
+        {
+            
+            if(l_eventData.keyCode==37)
+                {
+                    g_snake.moveLeft = 1;
+                }
+            
+            if(l_eventData.keyCode==38)
+                {
+                    g_snake.moveUp = 1;
+                }
+            
+            if(l_eventData.keyCode==39)
+                {
+                    g_snake.moveRight = 1;
+                }
+            if(l_eventData.keyCode==40)
+                {
+                    g_snake.moveDown = 1;
+                }
+        }
+        
+        function f_KeyUpEventHandler(l_eventData)
+        {
+            
+            if(l_eventData.keyCode==37)
+                {
+                    g_snake.moveLeft = 0;
+                }
+            
+            if(l_eventData.keyCode==38)
+                {
+                    g_snake.moveUp = 0;
+                }
+            
+            if(l_eventData.keyCode==39)
+                {
+                    g_snake.moveRight = 0;
+                }
+            if(l_eventData.keyCode==40)
+                {
+                    g_snake.moveDown = 0;
+                }
+        }
+        
+        function f_mouseDown(l_event)
+        {
+
+            g_mousePosX = l_event.clientX;
+            g_mousePosY = l_event.clientY;
+            
+            
+            if(activeScreen == 1)
+                {
+                    if(g_mousePosX >= g_StartButton.xPos && g_mousePosX <= (g_StartButton.xPos + g_StartButton.width) && g_mousePosY >= g_StartButton.yPos && g_mousePosY <= (g_StartButton.yPos + g_StartButton.height))
+                        {
+                            activeScreen = 2;
+                        }
+                    if(g_mousePosX >= g_SettingsButton.xPos && g_mousePosX <= (g_SettingsButton.xPos + g_SettingsButton.width) && g_mousePosY >= g_SettingsButton.yPos && g_mousePosY <= (g_SettingsButton.yPos + g_SettingsButton.height))
+                        {
+                            activeScreen = 3;
+                        }
+                }
+            
+            if(activeScreen == 2)
+                {
+                    if(g_mousePosX >= g_PauseButton.xPos && g_mousePosX <= (g_PauseButton.xPos + g_PauseButton.width) && g_mousePosY >= g_PauseButton.yPos && g_mousePosY <= (g_PauseButton.yPos + g_PauseButton.height))
+                        {
+                            activeScreen = 4;
+                        }
+                }
+            
+            if(activeScreen == 3)
+                {
+                    
+                    if(g_mousePosX >= g_SoundButton.xPos && g_mousePosX <= (g_SoundButton.xPos + g_SoundButton.width) && g_mousePosY >= g_SoundButton.yPos && g_mousePosY <= (g_SoundButton.yPos + g_SoundButton.height))
+                        {
+                            console.log("Sound is now set to true");
+                            alert("Sound is now set to TRUE");
+                        }
+                        
+                    
+                    if(g_mousePosX >= g_BackButton.xPos && g_mousePosX <= (g_BackButton.xPos + g_BackButton.width) && g_mousePosY >= g_BackButton.yPos && g_mousePosY <= (g_BackButton.yPos + g_BackButton.height))
+                        {
+                            activeScreen = 1;
+                        }
+                }
+            
+            if(activeScreen == 4)
+                {
+                    if(g_mousePosX >= g_QuitGame.xPos && g_mousePosX <= (g_QuitGame.xPos + g_QuitGame.width) && g_mousePosY >= g_QuitGame.yPos && g_mousePosY <= (g_QuitGame.yPos + g_QuitGame.height))
+                        {
+                            activeScreen = 1;
+                        }
+                    if(g_mousePosX >= g_ContinueButton.xPos && g_mousePosX <= (g_ContinueButton.xPos + g_ContinueButton.width) && g_mousePosY >= g_ContinueButton.yPos && g_mousePosY <= (g_ContinueButton.yPos + g_ContinueButton.height))
+                        {
+                            activeScreen = 2;
+                        }
+                }
+        }
+        
+         function f_ClearCanvas()
+        {
+            g_ctx.fillStyle="#e4aaff";
+            g_ctx.fillRect(0,0,g_canvas.width,g_canvas.height);
+        }
+        
+        function f_GameLogic()
+        {
+             if(activeScreen == 2)
+                {
+                    g_snake.m_moveSnake(g_ctx);
+                    f_snakeFoodCollision();
+                }
+        }
+                
+        function f_gameLoop()
+        {
+            f_GameLogic();
+            f_ClearCanvas();
+            f_drawMenu(g_ctx , activeScreen);
+            f_drawGameplayObjects(g_ctx);
+        }
+        
+        f_intMenu();
+        f_intGameplayObjects();
+        var id = setInterval(f_gameLoop,g_TimeInterval);
+        document.addEventListener("mousedown",f_mouseDown);
+        document.addEventListener("keydown",f_KeyDownEventHandler)
+        document.addEventListener("keyup",f_KeyUpEventHandler)
+
+    </script>
+</html>
